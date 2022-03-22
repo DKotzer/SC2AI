@@ -24,6 +24,10 @@ class DylanBot(BotAI):
         if self.townhalls:
             nexus = self.townhalls.random
             ramp = self.main_base_ramp
+
+            if self.structures(UnitTypeId.VOIDRAY).amount < 10 and self.can_afford(UnitTypeId.VOIDRAY):
+                for sg in self.structures(UnitTypeId.STARGATE).ready.idle:
+                    sg.train(UnitTypeId.VOIDRAY)
             
             if nexus.is_idle and self.can_afford(UnitTypeId.PROBE):
                 nexus.train(UnitTypeId.PROBE)
@@ -37,11 +41,19 @@ class DylanBot(BotAI):
                 if self.can_afford(UnitTypeId.PYLON):
                     await self.build(UnitTypeId.PYLON, near=nexus)
 
-            elif self.structures(UnitTypeId.PYLON).amount < 4:
+            elif self.structures(UnitTypeId.ASSIMILATOR).amount < 2 :
+                vespenes = self.vespene_geyser.closer_than(15, nexus)
+                for vespene in vespenes:
+                    if self.can_afford(UnitTypeId.ASSIMILATOR)and self.already_pending(UnitTypeId.ASSIMILATOR) == 0:
+                        await self.build(UnitTypeId.ASSIMILATOR, vespene)
+
+
+
+            elif self.structures(UnitTypeId.PYLON).amount < 5:
                 if self.can_afford(UnitTypeId.PYLON):
                     await self.build(UnitTypeId.PYLON, near=ramp.protoss_wall_pylon)    
 
-            elif self.structures(UnitTypeId.PYLON).amount < 7:
+            elif self.structures(UnitTypeId.PYLON).amount < 6:
                 if self.can_afford(UnitTypeId.PYLON):
                     target_pylon = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
                     
@@ -52,14 +64,58 @@ class DylanBot(BotAI):
                 if self.can_afford(UnitTypeId.FORGE):
                     await self.build(UnitTypeId.FORGE, near= self.structures(UnitTypeId.PYLON).closest_to(nexus))
 
-            elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 5:
+            elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 3:
                 if self.can_afford(UnitTypeId.PHOTONCANNON):
                     await self.build(UnitTypeId.PHOTONCANNON, near= self.structures(UnitTypeId.PYLON).closest_to(ramp.protoss_wall_pylon))
 
+            buildings = [UnitTypeId.GATEWAY, UnitTypeId.CYBERNETICSCORE,UnitTypeId.STARGATE]
+            #loop through buildings and build one if one does not exist and is not already building
+            for building in buildings:
+                if not self.structures(building):
+                    if self.can_afford(building) and self.already_pending(building)==0:
+                        await self.build(building,near= self.structures(UnitTypeId.PYLON).closest_to(nexus))
+                    break
+
+            '''
+             # a gateway? this gets us towards cyb core > stargate > void ray
+            elif not self.structures(UnitTypeId.GATEWAY):
+                if self.can_afford(UnitTypeId.GATEWAY):
+                    await self.build(UnitTypeId.GATEWAY, near=self.structures(UnitTypeId.PYLON).closest_to(nexus))
+            
+            # a cyber core? this gets us towards stargate > void ray
+            elif not self.structures(UnitTypeId.CYBERNETICSCORE):
+                if self.can_afford(UnitTypeId.CYBERNETICSCORE):
+                    await self.build(UnitTypeId.CYBERNETICSCORE, near=self.structures(UnitTypeId.PYLON).closest_to(nexus))
+
+            # a stargate? this gets us towards void ray
+            elif not self.structures(UnitTypeId.STARGATE):
+                if self.can_afford(UnitTypeId.STARGATE):
+                    await self.build(UnitTypeId.STARGATE, near=self.structures(UnitTypeId.PYLON).closest_to(nexus))
+
+            elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 6:
+                if self.can_afford(UnitTypeId.PHOTONCANNON):
+                    await self.build(UnitTypeId.PHOTONCANNON, near= self.structures(UnitTypeId.PYLON).closest_to(ramp.protoss_wall_pylon))
+            '''
 
         else:
             if self.can_afford(UnitTypeId.NEXUS):
                 await self.expand_now()
+        
+        ## Attack logic
+        if self.units(UnitTypeId.VOIDRAY).amount >= 5:
+            if self.enemy_units:
+                for vr in self.units(UnitTypeId.VOIDRAY):
+                    vr.attack(random.choice(self.enemy_units))
+            
+            elif self.enemy_structures:
+                for vr in self.units(UnitTypeId.VOIDRAY):
+                    vr.attack(random.choice(self.enemy_structures))
+                
+            else:
+                for vr in self.units(UnitTypeId.VOIDRAY):
+                    vr.attack(self.enemy_start_locations[0])
+                
+            
 
 run_game(
     maps.get("2000AtmospheresAIE"),
