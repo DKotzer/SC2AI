@@ -7,7 +7,6 @@ from sc2 import maps
 from sc2.ids.unit_typeid import UnitTypeId
 import random
 
-
 class DylanBot(BotAI):
     async def on_step(self, iteration:int):
 
@@ -17,7 +16,6 @@ class DylanBot(BotAI):
         f"pylons: {self.structures(UnitTypeId.PYLON).amount}, nexus: {self.structures(UnitTypeId.NEXUS).amount}", \
         f"gateways: {self.structures(UnitTypeId.GATEWAY).amount}, cybernetics cores: {self.structures(UnitTypeId.CYBERNETICSCORE).amount}", \
         f"stargates: {self.structures(UnitTypeId.STARGATE).amount}, voidrays: {self.units(UnitTypeId.VOIDRAY).amount}, supply: {self.supply_used}/{self.supply_cap}")
-
 
         await self.distribute_workers()
 
@@ -29,7 +27,8 @@ class DylanBot(BotAI):
                 for sg in self.structures(UnitTypeId.STARGATE).ready.idle:
                     sg.train(UnitTypeId.VOIDRAY)
             
-            if nexus.is_idle and self.can_afford(UnitTypeId.PROBE):
+            supply_remaining = self.supply_cap - self.supply_used
+            if nexus.is_idle and self.can_afford(UnitTypeId.PROBE) and self.units(UnitTypeId.PROBE).amount <= len(self.townhalls) *25 :
                 nexus.train(UnitTypeId.PROBE)
         
             elif not self.structures(UnitTypeId.PYLON) and self.already_pending(UnitTypeId.PYLON) == 0:
@@ -53,7 +52,7 @@ class DylanBot(BotAI):
                 if self.can_afford(UnitTypeId.PYLON):
                     await self.build(UnitTypeId.PYLON, near=ramp.protoss_wall_pylon)    
 
-            elif self.structures(UnitTypeId.PYLON).amount < 6:
+            elif self.structures(UnitTypeId.PYLON).amount < 5:
                 if self.can_afford(UnitTypeId.PYLON):
                     target_pylon = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
                     
@@ -68,7 +67,7 @@ class DylanBot(BotAI):
                 if self.can_afford(UnitTypeId.PHOTONCANNON):
                     await self.build(UnitTypeId.PHOTONCANNON, near= self.structures(UnitTypeId.PYLON).closest_to(ramp.protoss_wall_pylon))
 
-            buildings = [UnitTypeId.GATEWAY, UnitTypeId.CYBERNETICSCORE,UnitTypeId.STARGATE]
+            buildings = [UnitTypeId.GATEWAY, UnitTypeId.CYBERNETICSCORE,UnitTypeId.STARGATE] #how to continue the elif after this? maybe make a global variable game-phase, set to mid game after stargate built and then a new if for midgame, bad idea though because we need to earlier logic too
             #loop through buildings and build one if one does not exist and is not already building
             for building in buildings:
                 if not self.structures(building):
@@ -86,6 +85,7 @@ class DylanBot(BotAI):
             elif not self.structures(UnitTypeId.CYBERNETICSCORE):
                 if self.can_afford(UnitTypeId.CYBERNETICSCORE):
                     await self.build(UnitTypeId.CYBERNETICSCORE, near=self.structures(UnitTypeId.PYLON).closest_to(nexus))
+            
 
             # a stargate? this gets us towards void ray
             elif not self.structures(UnitTypeId.STARGATE):
@@ -94,7 +94,7 @@ class DylanBot(BotAI):
 
             elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 6:
                 if self.can_afford(UnitTypeId.PHOTONCANNON):
-                    await self.build(UnitTypeId.PHOTONCANNON, near= self.structures(UnitTypeId.PYLON).closest_to(ramp.protoss_wall_pylon))
+                    await self.build(UnitTypeId.PHOTONCANNON, near= self.structures(UnitTypeId.PYLON).closest_to(ramp.protoss_wall_pylon)) 
             '''
 
         else:
@@ -102,7 +102,7 @@ class DylanBot(BotAI):
                 await self.expand_now()
         
         ## Attack logic
-        if self.units(UnitTypeId.VOIDRAY).amount >= 5:
+        if self.units(UnitTypeId.VOIDRAY).amount >= 3:
             if self.enemy_units:
                 for vr in self.units(UnitTypeId.VOIDRAY):
                     vr.attack(random.choice(self.enemy_units))
@@ -116,7 +116,6 @@ class DylanBot(BotAI):
                     vr.attack(self.enemy_start_locations[0])
                 
             
-
 run_game(
     maps.get("2000AtmospheresAIE"),
     [Bot(Race.Protoss, DylanBot()),
