@@ -118,20 +118,7 @@ class DylanRushBot(BotAI):
             if self.can_afford(UnitTypeId.QUEEN):
                 self.train(UnitTypeId.QUEEN)
 
-    def draw_creep_pixelmap(self):
-        for (y, x), value in np.ndenumerate(self.state.creep.data_numpy):
-            p = Point2((x, y))
-            h2 = self.get_terrain_z_height(p)
-            pos = Point3((p.x, p.y, h2))
-            # Red if there is no creep
-            color = Point3((255, 0, 0))
-            if value == 1:
-                # Green if there is creep
-                color = Point3((0, 255, 0))
-            self._client.debug_box2_out(pos, half_vertex_length=0.25, color=color)
 
-    async def on_end(self, game_result: Result):
-        print(f"{self.time_formatted} On end was called")
 
     
 run_game(

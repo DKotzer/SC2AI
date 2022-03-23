@@ -37,7 +37,7 @@ class DylanBot(BotAI):
                 for sg in self.structures(UnitTypeId.STARGATE).ready.idle:
                     sg.train(UnitTypeId.VOIDRAY)
             
-            supply_remaining = self.supply_cap - self.supply_used
+            # supply_remaining = self.supply_cap - self.supply_used
             # Attack with all workers if we don't have any nexuses left, attack-move on enemy spawn (doesn't work on 4 player map) so that probes auto attack on the way
                         
             if not nexus.is_idle and not nexus.has_buff(BuffId.CHRONOBOOSTENERGYCOST):
@@ -48,7 +48,7 @@ class DylanBot(BotAI):
                         loop_nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
                         break
 
-            if self.supply_workers + self.already_pending(UnitTypeId.PROBE) < self.townhalls.amount * 22 and nexus.is_idle:
+            if self.supply_workers + self.already_pending(UnitTypeId.PROBE) < self.townhalls.amount * 22 and nexus.is_idle and self.supply_workers < 70:
                 if self.can_afford(UnitTypeId.PROBE):
                     nexus.train(UnitTypeId.PROBE)
         
@@ -83,26 +83,25 @@ class DylanBot(BotAI):
             #         break
 
             
-             # a gateway? this gets us towards cyb core > stargate > void ray
             elif not self.structures(UnitTypeId.GATEWAY):
                 if self.can_afford(UnitTypeId.GATEWAY):
                     await self.build(UnitTypeId.GATEWAY, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
             
-            # a cyber core? this gets us towards stargate > void ray
             elif not self.structures(UnitTypeId.CYBERNETICSCORE):
                 if self.can_afford(UnitTypeId.CYBERNETICSCORE):
                     await self.build(UnitTypeId.CYBERNETICSCORE, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
             elif not self.structures(UnitTypeId.FORGE):
                 if self.can_afford(UnitTypeId.FORGE):
-                    await self.build(UnitTypeId.FORGE, near= self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
+                    await self.build(UnitTypeId.FORGE, ramp.protoss_wall_buildings[1])
+
+                    # await self.build(UnitTypeId.FORGE, near= self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
             elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 3:
                 if self.can_afford(UnitTypeId.PHOTONCANNON):
                     await self.build(UnitTypeId.PHOTONCANNON, ramp.protoss_wall_buildings[0])
             
 
-            # a stargate? this gets us towards void ray
             elif self.structures(UnitTypeId.STARGATE).amount <=2 and self.already_pending(UnitTypeId.STARGATE) == 0:
                 if self.can_afford(UnitTypeId.STARGATE):
                     await self.build(UnitTypeId.STARGATE, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
@@ -121,7 +120,16 @@ class DylanBot(BotAI):
                 if self.can_afford(UnitTypeId.NEXUS):
                     await self.expand_now()
             
-            elif self.minerals > 1000:
+
+            elif self.minerals > 1000 and self.townhalls.ready.amount + self.already_pending(UnitTypeId.NEXUS) < 5 and self.supply_used > 120:
+                if self.can_afford(UnitTypeId.NEXUS):
+                    await self.expand_now()
+                    
+            elif self.minerals > 1000 and self.townhalls.ready.amount + self.already_pending(UnitTypeId.NEXUS) < 6 and self.supply_used > 170:
+                if self.can_afford(UnitTypeId.NEXUS):
+                    await self.expand_now()
+
+            elif self.minerals > 1100:
                 await self.build(UnitTypeId.PHOTONCANNON, near= nexus.position.towards(self.game_info.map_center, 5))
 
             # elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 6:
@@ -132,16 +140,15 @@ class DylanBot(BotAI):
         else:
             if self.can_afford(UnitTypeId.NEXUS):
                 await self.expand_now()
+        if self.structures(UnitTypeId.CYBERNETICSCORE).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSAIRWEAPONS) and self.already_pending_upgrade(UpgradeId.PROTOSSAIRWEAPONSLEVEL1) == 0:
+            ccore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.first
+            ccore.research(UpgradeId.PROTOSSAIRWEAPONSLEVEL1)
         
         ## Attack logic
         for vr in self.units(UnitTypeId.VOIDRAY):
             abilities = await self.get_available_abilities(vr)
             if AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT in abilities:
                 vr(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
-
-
-        #             if vr.weapon_cooldown == 0:
-        #                 vr(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
 
         if self.units(UnitTypeId.VOIDRAY).amount >= 15:
             
@@ -151,14 +158,11 @@ class DylanBot(BotAI):
             
             elif self.enemy_structures:
                 for vr in self.units(UnitTypeId.VOIDRAY):
-                    # if vr.weapon_cooldown > 0:
-                    #     vr(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
+
                     vr.attack((self.enemy_structures).closest_to(vr))
                 
             else:
                 for vr in self.units(UnitTypeId.VOIDRAY):
-                    # if vr.weapon_cooldown > 0:
-                    #     vr(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
                     vr.attack(self.enemy_start_locations[0]) # change this to enemey_start_locations[random range(len(enemy_start_locations))] - write the range part properly
                 
             
