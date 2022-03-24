@@ -34,9 +34,11 @@ class DylanBot(BotAI):
             ramp = self.main_base_ramp
             if self.structures(UnitTypeId.PYLON).ready:
                 proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
-                pylon = self.structures(UnitTypeId.PYLON).ready.random
+                # pylon = self.structures(UnitTypeId.PYLON).ready.random
 
-            if self.structures(UnitTypeId.STALKER).amount < 60 and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3 and self.structures(UnitTypeId.CYBERNETICSCORE).amount > 0:
+            
+
+            if self.units(UnitTypeId.STALKER).amount < self.units(UnitTypeId.ZEALOT).amount + 1   and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3 and self.structures(UnitTypeId.CYBERNETICSCORE).amount > 0:
                 for wg in self.structures(UnitTypeId.WARPGATE).ready:
                     abilities = await self.get_available_abilities(wg)
                     if AbilityId.WARPGATETRAIN_STALKER in abilities:
@@ -49,6 +51,36 @@ class DylanBot(BotAI):
                         
                     
                     wg.train(UnitTypeId.STALKER)
+        
+            if self.units(UnitTypeId.STALKER).amount > self.units(UnitTypeId.ZEALOT).amount and self.can_afford(UnitTypeId.ZEALOT) and self.supply_left > 3:
+                for wg in self.structures(UnitTypeId.WARPGATE).ready:
+                    abilities = await self.get_available_abilities(wg)
+                    if AbilityId.WARPGATETRAIN_ZEALOT in abilities:
+                        pos = proxy.position.to2.random_on_distance(4)
+                        placement = await self.find_placement(AbilityId.WARPGATETRAIN_ZEALOT, pos, placement_step=1)
+                        if placement is None:
+                            print("can't place")
+                            return
+                        wg.warp_in(UnitTypeId.ZEALOT, placement)
+                        
+                    
+                    wg.train(UnitTypeId.ZEALOT) 
+
+
+
+            # if self.structures(UnitTypeId.STALKER).amount < 60 and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3 and self.structures(UnitTypeId.CYBERNETICSCORE).amount > 0:
+            #     for wg in self.structures(UnitTypeId.WARPGATE).ready:
+            #         abilities = await self.get_available_abilities(wg)
+            #         if AbilityId.WARPGATETRAIN_STALKER in abilities:
+            #             pos = proxy.position.to2.random_on_distance(4)
+            #             placement = await self.find_placement(AbilityId.WARPGATETRAIN_STALKER, pos, placement_step=1)
+            #             if placement is None:
+            #                 print("can't place")
+            #                 return
+            #             wg.warp_in(UnitTypeId.STALKER, placement)
+                        
+                    
+            #         wg.train(UnitTypeId.STALKER)
             
             # supply_remaining = self.supply_cap - self.supply_used
             # Attack with all workers if we don't have any nexuses left, attack-move on enemy spawn (doesn't work on 4 player map) so that probes auto attack on the way
@@ -177,6 +209,23 @@ class DylanBot(BotAI):
             tc = self.structures(UnitTypeId.TWILIGHTCOUNCIL).ready.first
             tc.research(UpgradeId.BLINKTECH)
         
+        if self.structures(UnitTypeId.TWILIGHTCOUNCIL).ready and self.can_afford(AbilityId.RESEARCH_CHARGE) and self.already_pending_upgrade(UpgradeId.CHARGE) == 0:
+            tc = self.structures(UnitTypeId.TWILIGHTCOUNCIL).ready.first
+            tc.research(UpgradeId.CHARGE)
+
+        if self.structures(UnitTypeId.FORGE).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSGROUNDWEAPONS) and self.already_pending_upgrade(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1) == 0:
+            forge = self.structures(UnitTypeId.FORGE).ready.first
+            forge.research(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1)
+
+        if self.structures(UnitTypeId.FORGE).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSGROUNDARMOR) and self.already_pending_upgrade(UpgradeId.PROTOSSGROUNDARMORSLEVEL1) == 0:
+            forge = self.structures(UnitTypeId.FORGE).ready.first
+            forge.research(UpgradeId.PROTOSSGROUNDARMORSLEVEL1)
+        
+        #this block not working, not sure why
+        if self.structures(UnitTypeId.FORGE).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSGROUNDWEAPONS) and self.already_pending_upgrade(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL2) == 0 and self.already_pending_upgrade(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1) == 0:
+            forge = self.structures(UnitTypeId.FORGE).ready.first
+            forge.research(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL2)
+        
         ## Attack logic
         for stalk in self.units(UnitTypeId.STALKER):
             abilities = await self.get_available_abilities(stalk)
@@ -184,21 +233,35 @@ class DylanBot(BotAI):
                 blink_target = stalk.position.towards(self.start_location, 6)
                 stalk(AbilityId.EFFECT_BLINK_STALKER, blink_target)
 
+        
+        if self.enemy_units:
+            if self.enemy_units:
+                for stalk in self.units(UnitTypeId.STALKER):
+                    stalk.attack((self.enemy_units).closest_to(stalk))
+                for zealot in self.units(UnitTypeId.ZEALOT):
+                    zealot.attack((self.enemy_units).closest_to(zealot))
+
+
         if self.units(UnitTypeId.STALKER).amount >= 15:
             
             if self.enemy_units:
                 for stalk in self.units(UnitTypeId.STALKER):
                     stalk.attack((self.enemy_units).closest_to(stalk))
+                for zealot in self.units(UnitTypeId.ZEALOT):
+                    zealot.attack((self.enemy_units).closest_to(zealot))
             
             elif self.enemy_structures:
                 for stalk in self.units(UnitTypeId.STALKER):
                     stalk.attack((self.enemy_structures).closest_to(stalk))
+                for zealot in self.units(UnitTypeId.ZEALOT):
+                    zealot.attack((self.enemy_structures).closest_to(zealot))
                     
                 
             else:
                 for stalk in self.units(UnitTypeId.STALKER):
                     stalk.attack(self.enemy_start_locations[0]) # change this to enemey_start_locations[random range(len(enemy_start_locations))] - write the range part properly
-                
+                for zealot in self.units(UnitTypeId.ZEALOT):
+                    zealot.attack((self.enemy_start_locations[0]))
             
 run_game(
     maps.get("2000AtmospheresAIE"),
