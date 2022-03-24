@@ -33,9 +33,10 @@ class DylanBot(BotAI):
             nexus = self.townhalls.ready.random
             ramp = self.main_base_ramp
 
-            if self.structures(UnitTypeId.VOIDRAY).amount < 18 and self.can_afford(UnitTypeId.VOIDRAY):
-                for sg in self.structures(UnitTypeId.STARGATE).ready.idle:
-                    sg.train(UnitTypeId.VOIDRAY)
+            if self.structures(UnitTypeId.STALKER).amount < 40 and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3:
+                for wg in self.structures(UnitTypeId.WARPGATE).ready.idle:
+                    
+                    wg.train(UnitTypeId.STALKER)
             
             # supply_remaining = self.supply_cap - self.supply_used
             # Attack with all workers if we don't have any nexuses left, attack-move on enemy spawn (doesn't work on 4 player map) so that probes auto attack on the way
@@ -98,18 +99,26 @@ class DylanBot(BotAI):
                     await self.build(UnitTypeId.FORGE, ramp.protoss_wall_buildings[0])
                     # await self.build(UnitTypeId.FORGE, near= self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
-            elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 3:
-                if self.can_afford(UnitTypeId.PHOTONCANNON):
-                    await self.build(UnitTypeId.PHOTONCANNON, ramp.protoss_wall_buildings[0])
+            elif not self.structures(UnitTypeId.GATEWAY).amount <=4 and self.already_pending(UnitTypeId.GATEWAY) == 0:
+                if self.can_afford(UnitTypeId.GATEWAY):
+                    await self.build(UnitTypeId.GATEWAY, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
+
+            elif not self.structures(UnitTypeId.TWILIGHTCOUNCIL):
+                if self.can_afford(UnitTypeId.TWILIGHTCOUNCIL):
+                    await self.build(UnitTypeId.TWILIGHTCOUNCIL, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
+
+            # elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 3:
+            #     if self.can_afford(UnitTypeId.PHOTONCANNON):
+            #         await self.build(UnitTypeId.PHOTONCANNON, ramp.protoss_wall_buildings[0])
             
 
-            elif self.structures(UnitTypeId.STARGATE).amount <=2 and self.already_pending(UnitTypeId.STARGATE) == 0:
-                if self.can_afford(UnitTypeId.STARGATE):
-                    await self.build(UnitTypeId.STARGATE, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
+            # elif self.structures(UnitTypeId.STARGATE).amount <=2 and self.already_pending(UnitTypeId.STARGATE) == 0:
+            #     if self.can_afford(UnitTypeId.STARGATE):
+            #         await self.build(UnitTypeId.STARGATE, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
-            elif not self.structures(UnitTypeId.FLEETBEACON):
-                if self.can_afford(UnitTypeId.FLEETBEACON):
-                    await self.build(UnitTypeId.FLEETBEACON, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
+            # elif not self.structures(UnitTypeId.FLEETBEACON):
+            #     if self.can_afford(UnitTypeId.FLEETBEACON):
+            #         await self.build(UnitTypeId.FLEETBEACON, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
             
             
@@ -135,7 +144,7 @@ class DylanBot(BotAI):
             #     if self.can_afford(UnitTypeId.NEXUS):
             #         await self.expand_now()
 
-            elif self.minerals > 1100:
+            elif self.minerals > 2000:
                 await self.build(UnitTypeId.PHOTONCANNON, near= nexus.position.towards(self.game_info.map_center, 5))
 
             # elif self.structures(UnitTypeId.FORGE).ready and self.structures(UnitTypeId.PHOTONCANNON).amount < 6:
@@ -146,13 +155,13 @@ class DylanBot(BotAI):
             if self.can_afford(UnitTypeId.NEXUS):
                 await self.expand_now()
 
-        if self.structures(UnitTypeId.CYBERNETICSCORE).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSAIRWEAPONS) and self.already_pending_upgrade(UpgradeId.PROTOSSAIRWEAPONSLEVEL1) == 0:
+        if self.structures(UnitTypeId.CYBERNETICSCORE).ready and self.can_afford(AbilityId.RESEARCH_WARPGATE) and self.already_pending_upgrade(UpgradeId.WARPGATERESEARCH) == 0:
             ccore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.first
-            ccore.research(UpgradeId.PROTOSSAIRWEAPONSLEVEL1)
+            ccore.research(UpgradeId.WARPGATERESEARCH)
 
-        if self.structures(UnitTypeId.FLEETBEACON).ready and self.can_afford(AbilityId.RESEARCH_PROTOSSAIRWEAPONS) and self.already_pending_upgrade(UpgradeId.VOIDRAYSPEEDUPGRADE) == 0:
-            fb = self.structures(UnitTypeId.FLEETBEACON).ready.first
-            fb.research(UpgradeId.VOIDRAYSPEEDUPGRADE)
+        if self.structures(UnitTypeId.TWILIGHTCOUNCIL).ready and self.can_afford(AbilityId.RESEARCH_BLINK) and self.already_pending_upgrade(UpgradeId.BLINKTECH) == 0:
+            tc = self.structures(UnitTypeId.TWILIGHTCOUNCIL).ready.first
+            tc.research(UpgradeId.BLINKTECH)
         
         ## Attack logic
         for vr in self.units(UnitTypeId.VOIDRAY):
