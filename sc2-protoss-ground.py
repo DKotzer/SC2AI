@@ -25,7 +25,7 @@ class DylanBot(BotAI):
         await self.distribute_workers()
 
         if iteration == 0:
-            await self.chat_send("GL HF")
+            self.chat_send("GL HF")
 
         if self.townhalls:
 
@@ -203,6 +203,6 @@ class DylanBot(BotAI):
 run_game(
     maps.get("2000AtmospheresAIE"),
     [Bot(Race.Protoss, DylanBot()),
-    Computer(Race.Terran, Difficulty.VeryHard)],
+    Computer(Race.Protoss, Difficulty.VeryHard)],
     realtime=False
 )
