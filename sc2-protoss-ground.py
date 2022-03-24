@@ -32,9 +32,21 @@ class DylanBot(BotAI):
             # nexus = self.townhalls.random
             nexus = self.townhalls.ready.random
             ramp = self.main_base_ramp
+            if self.structures(UnitTypeId.PYLON).ready:
+                proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
+                pylon = self.structures(UnitTypeId.PYLON).ready.random
 
-            if self.structures(UnitTypeId.STALKER).amount < 40 and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3:
-                for wg in self.structures(UnitTypeId.WARPGATE).ready.idle:
+            if self.structures(UnitTypeId.STALKER).amount < 60 and self.can_afford(UnitTypeId.STALKER) and self.supply_left > 3 and self.structures(UnitTypeId.CYBERNETICSCORE).amount > 0:
+                for wg in self.structures(UnitTypeId.WARPGATE).ready:
+                    abilities = await self.get_available_abilities(wg)
+                    if AbilityId.WARPGATETRAIN_STALKER in abilities:
+                        pos = proxy.position.to2.random_on_distance(4)
+                        placement = await self.find_placement(AbilityId.WARPGATETRAIN_STALKER, pos, placement_step=1)
+                        if placement is None:
+                            print("can't place")
+                            return
+                        wg.warp_in(UnitTypeId.STALKER, placement)
+                        
                     
                     wg.train(UnitTypeId.STALKER)
             
@@ -57,15 +69,17 @@ class DylanBot(BotAI):
             #     if self.can_afford(UnitTypeId.PYLON):
             #         await self.build(UnitTypeId.PYLON, near=nexus) #look in to other options in documentation
 
-            elif self.structures(UnitTypeId.PYLON).amount <= 1 and self.supply_left < 4 and self.already_pending(UnitTypeId.PYLON) < 2:
+            elif self.structures(UnitTypeId.PYLON).amount <= 1 and self.supply_left < 4 and self.already_pending(UnitTypeId.PYLON) < 1:
                 if self.can_afford(UnitTypeId.PYLON):
                     await self.build(UnitTypeId.PYLON, near=ramp.protoss_wall_pylon)
+                    
             
             # elif self.structures(UnitTypeId.PYLON).amount < 5:
             #     if self.can_afford(UnitTypeId.PYLON):
             #         await self.build(UnitTypeId.PYLON, near=nexus)
 
             elif self.structures(UnitTypeId.PYLON).amount < 20 and self.supply_used > 15 and self.supply_left < 4 and self.already_pending(UnitTypeId.PYLON) < 2:
+                
                 if self.can_afford(UnitTypeId.PYLON):
                     # target_pylon = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
                     
@@ -99,7 +113,7 @@ class DylanBot(BotAI):
                     await self.build(UnitTypeId.FORGE, ramp.protoss_wall_buildings[0])
                     # await self.build(UnitTypeId.FORGE, near= self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
-            elif not self.structures(UnitTypeId.GATEWAY).amount <=4 and self.already_pending(UnitTypeId.GATEWAY) == 0:
+            elif self.minerals > 500 and not self.structures(UnitTypeId.GATEWAY).amount <=6 and self.already_pending(UnitTypeId.GATEWAY) == 0:
                 if self.can_afford(UnitTypeId.GATEWAY):
                     await self.build(UnitTypeId.GATEWAY, near=self.structures(UnitTypeId.PYLON).closest_to(self.townhalls.random))
 
@@ -164,30 +178,31 @@ class DylanBot(BotAI):
             tc.research(UpgradeId.BLINKTECH)
         
         ## Attack logic
-        for vr in self.units(UnitTypeId.VOIDRAY):
-            abilities = await self.get_available_abilities(vr)
-            if AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT in abilities:
-                vr(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
+        for stalk in self.units(UnitTypeId.STALKER):
+            abilities = await self.get_available_abilities(stalk)
+            if AbilityId.EFFECT_BLINK_STALKER in abilities and stalk.shield < 5:
+                blink_target = stalk.position.towards(self.start_location, 6)
+                stalk(AbilityId.EFFECT_BLINK_STALKER, blink_target)
 
-        if self.units(UnitTypeId.VOIDRAY).amount >= 15:
+        if self.units(UnitTypeId.STALKER).amount >= 15:
             
             if self.enemy_units:
-                for vr in self.units(UnitTypeId.VOIDRAY):
-                    vr.attack((self.enemy_units).closest_to(vr))
+                for stalk in self.units(UnitTypeId.STALKER):
+                    stalk.attack((self.enemy_units).closest_to(stalk))
             
             elif self.enemy_structures:
-                for vr in self.units(UnitTypeId.VOIDRAY):
-                    vr.attack((self.enemy_structures).closest_to(vr))
+                for stalk in self.units(UnitTypeId.STALKER):
+                    stalk.attack((self.enemy_structures).closest_to(stalk))
                     
                 
             else:
-                for vr in self.units(UnitTypeId.VOIDRAY):
-                    vr.attack(self.enemy_start_locations[0]) # change this to enemey_start_locations[random range(len(enemy_start_locations))] - write the range part properly
+                for stalk in self.units(UnitTypeId.STALKER):
+                    stalk.attack(self.enemy_start_locations[0]) # change this to enemey_start_locations[random range(len(enemy_start_locations))] - write the range part properly
                 
             
 run_game(
     maps.get("2000AtmospheresAIE"),
     [Bot(Race.Protoss, DylanBot()),
-    Computer(Race.Protoss, Difficulty.VeryHard)],
+    Computer(Race.Terran, Difficulty.VeryHard)],
     realtime=False
 )
